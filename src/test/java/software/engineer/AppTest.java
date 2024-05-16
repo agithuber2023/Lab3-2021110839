@@ -1,12 +1,24 @@
 package software.engineer;
 
+import guru.nidi.graphviz.attribute.*;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.LinkSource;
+import guru.nidi.graphviz.model.Node;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringJoiner;
+import javax.swing.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+import static guru.nidi.graphviz.attribute.Attributes.attr;
+import static guru.nidi.graphviz.attribute.Rank.RankDir.LEFT_TO_RIGHT;
+import static guru.nidi.graphviz.model.Factory.graph;
+import static guru.nidi.graphviz.model.Factory.node;
+import static guru.nidi.graphviz.model.Link.to;
 
 /**
  * Unit test for simple App.
@@ -99,5 +111,26 @@ public class AppTest
             }
             return (joiner.toString());
         }
+    }
+
+    public void testGraph() throws IOException {
+        String[] vertexes = {"aa", "bb", "cc"};
+        Edge[] edges = {new Edge("aa", "bb", 1), new Edge("bb", "cc", 1)};
+        Map<String, Node> map = new HashMap<>();
+        for (String vertex:vertexes){
+            map.put(vertex, node(vertex));
+        }
+        LinkSource[] linkSources = new LinkSource[edges.length];
+        int index = 0;
+        for (Edge edge:edges){
+            linkSources[index++] = map.get(edge.getFrom()).link(to(map.get(edge.getTo())).with(Label.of(Integer.toString(edge.getValue()))));
+        }
+        guru.nidi.graphviz.model.Graph g = graph("text").directed()
+                .graphAttr().with(Rank.dir(LEFT_TO_RIGHT))
+                .linkAttr().with("class", "link-class")
+                .with(
+            linkSources
+        );
+        Graphviz.fromGraph(g).height(100).render(Format.PNG).toFile(new File("example/ex1.png"));
     }
 }
