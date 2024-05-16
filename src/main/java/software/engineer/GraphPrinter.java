@@ -1,133 +1,130 @@
 package software.engineer;
 
 import java.awt.*;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
 
-import edu.uci.ics.jung.algorithms.layout.*;
-import edu.uci.ics.jung.graph.SparseGraph;
-import edu.uci.ics.jung.graph.util.EdgeType;
-import edu.uci.ics.jung.visualization.VisualizationImageServer;
-import edu.uci.ics.jung.visualization.VisualizationViewer;
-import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse;
-import edu.uci.ics.jung.visualization.control.ModalGraphMouse.Mode;
-import edu.uci.ics.jung.visualization.decorators.ToStringLabeller;
+import org.jgrapht.Graph;
+import org.jungrapht.visualization.decorators.EdgeShape;
+import org.jungrapht.visualization.decorators.EllipseShapeFunction;
+import org.jungrapht.visualization.decorators.IconShapeFunction;
+import org.jungrapht.visualization.layout.algorithms.SugiyamaLayoutAlgorithm;
+import org.jungrapht.visualization.renderers.Renderer;
+import org.jungrapht.visualization.util.IconCache;
 
 
 public class GraphPrinter extends JFrame {
-    private SparseGraph g;
-    private VisualizationViewer<String, String> vv;
+    private Graph<String, String> graph;
+    private org.jungrapht.visualization.VisualizationViewer<String, String> vv;
 
-    private static SparseGraph initGraph() {
-        SparseGraph graph = new SparseGraph();
-        for (int i = 1; i < 10; i++) {
-            graph.addVertex(i);
-            graph.addEdge(Integer.toString(i), 1, i + 1, EdgeType.DIRECTED);
-        }
-        System.out.println("The graph: \n" + graph.toString());
-        return graph;
+    private org.jungrapht.visualization.VisualizationViewer<String, String> configureVisualizationViewer(
+            Graph<String, String> graph) {
+        org.jungrapht.visualization.VisualizationViewer<String, String> vv =
+                org.jungrapht.visualization.VisualizationViewer.builder(graph)
+                        .layoutSize(new Dimension(700, 700))
+                        .viewSize(new Dimension(700, 700))
+                        .build();
+
+        vv.getRenderContext().setEdgeShapeFunction(EdgeShape.line());
+        vv.setVertexToolTipFunction(Object::toString);
+        vv.getRenderContext().setArrowFillPaintFunction(n -> Color.lightGray);
+
+        vv.getRenderContext().setVertexLabelPosition(org.jungrapht.visualization.renderers.Renderer.VertexLabel.Position.CNTR);
+
+        // 设置顶点
+        // vv.getRenderContext().setVertexLabelDrawPaintFunction(c -> Color.WHITE))
+        vv.getRenderContext().setVertexFillPaintFunction(s -> Color.WHITE);
+//        vv.getRenderContext().setVertexLabelFunction(Object::toString);
+        vv.getRenderContext().setVertexLabelPosition(Renderer.VertexLabel.Position.CNTR);
+
+        IconCache<String> iconCache =
+                IconCache.<String>builder(Object::toString)
+                        .vertexShapeFunction(vv.getRenderContext().getVertexShapeFunction())
+                        .stylist(
+                                (label, vertex, colorFunction) -> {
+                                    label.setForeground(Color.black);
+                                    label.setBackground(Color.white);
+                                    Border lineBorder = BorderFactory.createEtchedBorder();
+                                    Border marginBorder = BorderFactory.createEmptyBorder(4, 4, 4, 4);
+                                    label.setBorder(new CompoundBorder(lineBorder, marginBorder));
+                                })
+                        .build();
+
+        final IconShapeFunction<String> vertexImageShapeFunction =
+                new IconShapeFunction<>(new EllipseShapeFunction<>());
+        vertexImageShapeFunction.setIconFunction(iconCache);
+
+        vv.getRenderContext().setVertexShapeFunction(vertexImageShapeFunction);
+        vv.getRenderContext().setVertexIconFunction(iconCache);
+
+        // 设置边
+        vv.getRenderContext().setEdgeLabelFunction(s -> s.split("=")[1]);
+        vv.getRenderContext().setEdgeStrokeFunction(p -> new BasicStroke(p.startsWith("[b]") ? 3f : 1.5f));
+        return vv;
     }
 
     public GraphPrinter() {
-        this.g = new SparseGraph();
+        this.graph = null;
     }
 
     /**
      * 可视化显示图
-     * https://blog.csdn.net/sunquan291/article/details/81487141
+     * https://github.com/tomnelson/jungrapht-visualization
      */
-    public void draw(SparseGraph g) {
-        this.g = g;
+    public void draw(Graph<String, String> g) {
+
+        this.graph = g;
         this.setTitle("Graph");
-        this.setFont(new Font("Times New Roman", Font.PLAIN, 12));
-        this.setBackground(Color.white);// 设置窗口背景颜色
+        this.setFont(new Font("Times New Roman", Font.PLAIN, 40));
+        this.setBackground(Color.white); // 设置窗口背景颜色
 
-        //创建viewer 圆形布局结构(V,E节点和链路类型)
-        vv = new VisualizationViewer<String, String>(new FRLayout2<>(g));
+        JPanel container = new JPanel(new BorderLayout());
 
-        // 设置顶点文本标签
-        vv.getRenderContext().setVertexLabelTransformer(new ToStringLabeller());
+        vv = configureVisualizationViewer(graph);
+        vv.getRenderContext().setEdgeShapeFunction(EdgeShape.line());
 
-        // 设置顶点颜色
-        vv.getRenderContext().setVertexFillPaintTransformer(s -> Color.WHITE);
+//        TreeLayoutSelector<String, Integer> treeLayoutSelector =
+//                TreeLayoutSelector.<String, Integer>builder(vv)
+//                        .initialSelection(2)
+//                        .vertexShapeFunction(vv.getRenderContext().getVertexShapeFunction())
+//                        .alignFavoredEdges(false)
+//                        .columns(3)
+//                        .build();
 
-        // 设置边的文本标签
-        vv.getRenderContext().setEdgeLabelTransformer(s -> s.split("=")[1]);
-        // 设置边的线型
-        vv.getRenderContext().setEdgeStrokeTransformer(p -> {
-//            System.out.println(p);
-            if (p.startsWith("[b]")) return new BasicStroke(3f);
-            else return new BasicStroke(1f);
-        });
+        SugiyamaLayoutAlgorithm<String, String> layoutAlgorithm =
+                SugiyamaLayoutAlgorithm.<String, String>edgeAwareBuilder().build();
+        layoutAlgorithm.setVertexBoundsFunction(vv.getRenderContext().getVertexBoundsFunction());
+        vv.getVisualizationModel().setLayoutAlgorithm(layoutAlgorithm);
 
-        DefaultModalGraphMouse<Integer, String> gm = new DefaultModalGraphMouse<Integer, String>();
-        gm.setMode(Mode.PICKING);
-        vv.setGraphMouse(gm);
-        // 将上述对象放置在一个Swing容器中并显示之
-        getContentPane().add(vv);
+        container.add(vv.getComponent());
+
+//        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        add(container);
+
+//        Box controls = Box.createHorizontalBox();
+//        controls.add(ControlHelpers.getCenteredContainer("Layout Controls", treeLayoutSelector));
+//        add(controls, BorderLayout.SOUTH);
+
         pack();
-
-//        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        this.setVisible(true);
+        setVisible(true);
     }
 
     /**
      * 保存为图片
-     * https://stackoverflow.com/questions/10420779/jung-save-whole-graph-not-only-visible-part-as-image
      * @throws IOException
      */
     public void save(String filename) throws IOException {
-        // Create the VisualizationImageServer
-        // vv is the VisualizationViewer containing my graph
-        VisualizationImageServer<String, String> vis =
-                new VisualizationImageServer<String, String>(vv.getGraphLayout(),
-                        vv.getGraphLayout().getSize());
-
-
-        vis.setBackground(Color.WHITE);
-
-        // 设置顶点文本标签
-        vis.getRenderContext().setVertexLabelTransformer(new ToStringLabeller());
-
-        // 设置顶点颜色
-        vis.getRenderContext().setVertexFillPaintTransformer(s -> Color.WHITE);
-
-        // 设置边的文本标签
-        vis.getRenderContext().setEdgeLabelTransformer(s -> s.split("=")[1]);
-        // 设置边的线型
-        vis.getRenderContext().setEdgeStrokeTransformer(p -> {
-//            System.out.println(p);
-            if (p.startsWith("[b]")) return new BasicStroke(3f);
-            else return new BasicStroke(1f);
-        });
-
-        // Create the buffered image
-        BufferedImage image = (BufferedImage) vis.getImage(
-                new Point2D.Double(vv.getGraphLayout().getSize().getWidth() / 2,
-                        vv.getGraphLayout().getSize().getHeight() / 2),
-                new Dimension(vv.getGraphLayout().getSize()));
-
-        // Write image to a png file
-        File outputfile = new File(filename);
-
-        try {
-            ImageIO.write(image, "png", outputfile);
-        } catch (IOException e) {
-            // Exception handling
-        }
-    }
-
-    public void save() throws IOException {
-        this.save("graph.png"); // 默认存储路径
-    }
-
-    public static void main(String[] args) {
-        SparseGraph g = initGraph();
-        GraphPrinter frame = new GraphPrinter();
-        frame.draw(g);
+        Dimension size = vv.getComponent().getSize(); // 获取组件大小
+        BufferedImage image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB); // 创建一个和组件一样大小的BufferedImage对象
+        Graphics2D g2d = image.createGraphics(); // 创建Graphics2D对象
+        vv.getComponent().paint(g2d);            // 将组件内容绘制到Graphics2D对象，也就是绘制到了BufferedImage对象
+        g2d.dispose();                           // 释放Graphics2D对象
+        ImageIO.write(image, "png", new File(filename));
     }
 }

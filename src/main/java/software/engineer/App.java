@@ -1,8 +1,7 @@
 package software.engineer;
 
-import edu.uci.ics.jung.graph.SparseGraph;
-import edu.uci.ics.jung.graph.util.EdgeType;
-import edu.uci.ics.jung.graph.util.Pair;
+import org.jgrapht.graph.builder.GraphTypeBuilder;
+import org.jgrapht.util.SupplierUtil;
 
 import java.io.*;
 import java.util.*;
@@ -108,13 +107,17 @@ public class App
      * @param filename 保存文件名
      */
     private static void showDirectedGraph(Graph g, List<Edge> path, String filename) throws IOException {
-        SparseGraph graph = new SparseGraph();
+        org.jgrapht.Graph<String, String> graph;
+        graph = GraphTypeBuilder.<String, String>directed()
+                .edgeSupplier(SupplierUtil.createStringSupplier())
+                .vertexSupplier(SupplierUtil.createStringSupplier())
+                .buildGraph();
         List<String> vertexes = g.getVertexes();
         List<Edge> edges = g.getEdges();
         for (String vertex : vertexes) graph.addVertex(vertex);
         for (Edge edge : edges) {
-            if (path.contains(edge)) graph.addEdge("[b]"+edge.toString(), new Pair(edge.getFrom(), edge.getTo()), EdgeType.DIRECTED);
-            else graph.addEdge(edge.toString(), new Pair(edge.getFrom(), edge.getTo()), EdgeType.DIRECTED);
+            if (path.contains(edge)) graph.addEdge(edge.getFrom(), edge.getTo(), "[b]"+edge);
+            else graph.addEdge(edge.getFrom(), edge.getTo(), edge.toString());
         }
 //        System.out.println("The graph: \n" + graph);
 

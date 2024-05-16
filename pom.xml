@@ -35,28 +35,27 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
     <dependency>
-      <groupId>net.sf.jung</groupId>
-      <artifactId>jung-graph-impl</artifactId>
-      <version>2.1.1</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.30</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
     </dependency>
     <dependency>
-      <groupId>net.sf.jung</groupId>
-      <artifactId>jung-api</artifactId>
-      <version>2.1.1</version>
+      <groupId>com.github.tomnelson</groupId>
+      <artifactId>jungrapht-visualization</artifactId>
+      <version>1.4</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/net.sf.jung/jung-visualization -->
     <dependency>
-      <groupId>net.sf.jung</groupId>
-      <artifactId>jung-visualization</artifactId>
-      <version>2.1.1</version>
+      <groupId>com.github.tomnelson</groupId>
+      <artifactId>jungrapht-layout</artifactId>
+      <version>1.4</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/net.sf.jung/jung-algorithms -->
-    <dependency>
-      <groupId>net.sf.jung</groupId>
-      <artifactId>jung-algorithms</artifactId>
-      <version>2.1.1</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/net.sourceforge.collections/collections-generic -->
   </dependencies>
 </project>
