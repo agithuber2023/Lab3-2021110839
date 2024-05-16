@@ -5,6 +5,7 @@ import guru.nidi.graphviz.attribute.Label;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Factory;
+import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.LinkSource;
 import guru.nidi.graphviz.model.Node;
 
@@ -16,12 +17,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static guru.nidi.graphviz.model.Factory.graph;
-import static guru.nidi.graphviz.model.Link.to;
 
 public class App
 {
     private static Graph graph;
-    private static ImageFrame imageFrame = new ImageFrame();
+    private static final ImageFrame imageFrame = new ImageFrame();
 
     /**
      * 主程序入口，接收用户输入文件，生成图，并允许用户选择后续各项功能
@@ -85,9 +85,7 @@ public class App
                     String randomwalk = randomWalk();
                     System.out.println(randomwalk);
                 }
-                case 0 -> {
-                    flag = false;
-                }
+                case 0 -> flag = false;
                 default -> System.out.println("无效选择，请重新输入");
             }
         }
@@ -290,49 +288,34 @@ public class App
  * -[ ] 邻接表的图结构（稀疏图）
  */
 interface Graph {
-    public int size(); // 顶点数
+    int size(); // 顶点数
 
     /* 顶点 */
-    public void addVertex(String vertex);
-    public List<String> getVertexes(); // 顶点列表V
-    public int getVertex(String vertex); // vertex -> index
-    public String getVertex(int index); // index -> vertex
-    public List<String> getNeighbors(String v); // 邻居节点
+    void addVertex(String vertex);
+    List<String> getVertexes(); // 顶点列表V
+    int getVertex(String vertex); // vertex -> index
+    String getVertex(int index); // index -> vertex
+    List<String> getNeighbors(String v); // 邻居节点
 
     /* 边 */
-    public void addEdge(String a, String b) throws Exception; // 添加边（边权重+1）
-    public void addEdge(String a, String b, int value) throws Exception; // 设置边权重为 value
-    public int getEdge(String a, String b);
-    public List<Edge> getEdges(); // 边列表E
+    void addEdge(String a, String b) throws Exception; // 添加边（边权重+1）
+    void addEdge(String a, String b, int value) throws Exception; // 设置边权重为 value
+    int getEdge(String a, String b);
+    List<Edge> getEdges(); // 边列表E
 
 
     /* 显示 */
-    public void print();
+    void print();
 
     /* 图算法 */
     List<List<Object>> Dijkstra(String v); // [路径, 路径长度]
 }
 
-class Edge {
-    private String from;
-    private String to;
-    private int value;
-
-    public Edge(String from, String to, int value) {
-        this.from = from;
-        this.to = to;
-        this.value = value;
-    }
-
-    public String getFrom() { return from; }
-
-    public String getTo() { return to; }
-
-    public int getValue() { return value; }
+record Edge(String from, String to, int value) {
 
     @Override
     public String toString() {
-        return "("+from+", "+to+") = "+ value;
+        return "(" + from + ", " + to + ") = " + value;
     }
 
     @Override
@@ -343,10 +326,6 @@ class Edge {
         return value == edge.value && Objects.equals(from, edge.from) && Objects.equals(to, edge.to);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(from, to, value);
-    }
 }
 
 
@@ -576,10 +555,10 @@ class ImageFrame extends JFrame {
         LinkSource[] linkSources = new LinkSource[edges.size()];
         int index = 0;
         for (Edge edge:edges){
-            linkSources[index++] = nodes.get(edge.getFrom())
+            linkSources[index++] = nodes.get(edge.from())
                     .link(
-                            to(nodes.get(edge.getTo()))
-                                    .with(Label.of(Integer.toString(edge.getValue())), path.contains(edge)? Color.RED: Color.BLACK)
+                            Link.to(nodes.get(edge.to()))
+                                    .with(Label.of(Integer.toString(edge.value())), path.contains(edge)? Color.RED: Color.BLACK)
                     );
         }
         guru.nidi.graphviz.model.Graph g = graph("text").directed()
@@ -596,7 +575,7 @@ class InputFile
 {
     private static final String FILE_PATH = "article.txt";
     private String file_path = null;
-    private String[] words;
+    private final String[] words;
 
     public InputFile(String[] args) throws IOException {
         read_args(args);
@@ -606,7 +585,6 @@ class InputFile
     /**
      * 读取命令行参数中的指定文件（-f, --file）
      * @param args 参数列表
-     * @return 文件路径
      */
     public void read_args(String[] args){
         for (int i = 0; i < args.length; i++) {
@@ -621,7 +599,6 @@ class InputFile
     /**
      * 输入文件，预处理文件内容，返回单词列表
      * @return 单词列表
-     * @throws IOException
      */
     private String[] read() throws IOException {
         StringBuilder content = new StringBuilder();
@@ -632,8 +609,7 @@ class InputFile
             }
         }
         String filter_non_alphabet = content.toString().replaceAll("[^A-Za-z]", " "); // 将非字母字符替换为空格
-        String words[] = filter_non_alphabet.toLowerCase().split("\\s+"); // 分割处理后的文本
-        return words;
+        return filter_non_alphabet.toLowerCase().split("\\s+");
     }
 
     public String[] getWords() {

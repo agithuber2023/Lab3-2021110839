@@ -9,12 +9,10 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static guru.nidi.graphviz.attribute.Attributes.attr;
 import static guru.nidi.graphviz.attribute.Rank.RankDir.LEFT_TO_RIGHT;
 import static guru.nidi.graphviz.model.Factory.graph;
 import static guru.nidi.graphviz.model.Factory.node;
@@ -123,7 +121,7 @@ public class AppTest
         LinkSource[] linkSources = new LinkSource[edges.length];
         int index = 0;
         for (Edge edge:edges){
-            linkSources[index++] = map.get(edge.getFrom()).link(to(map.get(edge.getTo())).with(Label.of(Integer.toString(edge.getValue()))));
+            linkSources[index++] = map.get(edge.from()).link(to(map.get(edge.to())).with(Label.of(Integer.toString(edge.value()))));
         }
         guru.nidi.graphviz.model.Graph g = graph("text").directed()
                 .graphAttr().with(Rank.dir(LEFT_TO_RIGHT))
