@@ -4,14 +4,14 @@ import edu.uci.ics.jung.graph.SparseGraph;
 import edu.uci.ics.jung.graph.util.EdgeType;
 import edu.uci.ics.jung.graph.util.Pair;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
-// TODO: 检查函数的specification（实验要求P16）
 
 public class App
 {
     private static Graph graph;
+    private static final GraphPrinter graphPrinter = new GraphPrinter();
 
     /**
      * 主程序入口，接收用户输入文件，生成图，并允许用户选择后续各项功能
@@ -21,7 +21,7 @@ public class App
         InputFile inputFile = new InputFile(args);
         String[] words = inputFile.getWords();
         graph = buildGraph(words);
-        graph.print();
+        //graph.print();
         Scanner scanner = new Scanner(System.in);
         String input;
         boolean flag = true;
@@ -35,14 +35,16 @@ public class App
             System.out.println("5. 随机游走");
             System.out.println("0. 退出");
 
-            int choice = scanner.nextInt();
-            // FIXME: 输入非数字时会报错
+            int choice;
+            while (!(scanner.hasNextInt())) {
+                scanner.next();
+                System.out.println("请输入一个数字：");
+            }
+            choice=scanner.nextInt();
             scanner.nextLine();
             switch (choice) {
-                // TODO: 每个功能测试输入
                 case 1 -> showDirectedGraph(graph);
                 case 2 -> {
-                    // TODO: 测试文件中未出现的单词
                     System.out.println("请输入两个单词(" + graph.getVertexes().toString() + "): ");
                     input = scanner.nextLine();
                     words = input.split("\\s+");
@@ -54,13 +56,11 @@ public class App
                     queryBridgeWords(words[0], words[1], true);
                 }
                 case 3 -> {
-                    // TODO: 测试文件中未出现的单词
                     System.out.println("请输入一个句子");
                     input = scanner.nextLine();
                     System.out.println(generateNewText(input));
                 }
                 case 4 -> {
-                    // TODO: 测试文件中未出现的单词
                     System.out.println("请输入一个或者两个单词(" + graph.getVertexes().toString() + "): ");
                     input = scanner.nextLine();
                     words = input.split("\\s+");
@@ -72,11 +72,18 @@ public class App
                     if (words.length == 1) System.out.println(calcShortestPath(words[0]));
                     else System.out.println(calcShortestPath(words[0], words[1]));
                 }
-                case 5 -> System.out.println(randomWalk());
-                case 0 -> flag = false;
+                case 5 -> {
+                    String randomwalk = randomWalk();
+                    System.out.println(randomwalk);
+                    stringToFile("randomWalk.txt", randomwalk);
+                }
+                case 0 -> {
+                    flag = false;
+                }
                 default -> System.out.println("无效选择，请重新输入");
             }
         }
+        System.exit(0);
     }
 
     private static Graph buildGraph(String[] words) throws Exception {
@@ -97,17 +104,26 @@ public class App
      * ✅ 可选功能：将生成的有向图以图形文件形式保存到磁盘，可以调用外部
      * 绘图库或绘图工具API自动生成有向图，但不能采用手工方式绘图
      * @param g 有向图
+     * @param path 突出标注路径
+     * @param filename 保存文件名
      */
-    private static void showDirectedGraph(Graph g) throws IOException {
+    private static void showDirectedGraph(Graph g, List<Edge> path, String filename) throws IOException {
         SparseGraph graph = new SparseGraph();
         List<String> vertexes = g.getVertexes();
         List<Edge> edges = g.getEdges();
         for (String vertex : vertexes) graph.addVertex(vertex);
-        for (Edge edge : edges) graph.addEdge(edge.toString(), new Pair(edge.getFrom(), edge.getTo()), EdgeType.DIRECTED);
-        System.out.println("The graph: \n" + graph);
-        GraphPrinter graphPrinter = new GraphPrinter(graph);
-        graphPrinter.draw();
-        graphPrinter.save();
+        for (Edge edge : edges) {
+            if (path.contains(edge)) graph.addEdge("[b]"+edge.toString(), new Pair(edge.getFrom(), edge.getTo()), EdgeType.DIRECTED);
+            else graph.addEdge(edge.toString(), new Pair(edge.getFrom(), edge.getTo()), EdgeType.DIRECTED);
+        }
+//        System.out.println("The graph: \n" + graph);
+
+        graphPrinter.draw(graph);
+        graphPrinter.save(filename);
+    }
+
+    private static void showDirectedGraph(Graph g) throws IOException {
+        showDirectedGraph(g, new ArrayList<>(), "graph.png");
     }
 
     /**
@@ -200,14 +216,27 @@ public class App
      * @param word2 单词2
      * @return 最短路径的字符串
      */
-    private static String calcShortestPath(String word1, String word2) {
+    private static String calcShortestPath(String word1, String word2) throws IOException {
         List<List<Object>> paths = graph.Dijkstra(word1);
+        if (paths == null) return "\"" + word1 + "\" is not exist";
+        if (!graph.getVertexes().contains(word2)) return "\"" + word2 + "\" is not exist";
         List<Object> res = paths.get(graph.getVertex(word2));
+
+        // 突出显示路径
+        List<Edge> path = new ArrayList<>();
+        String[] nodes = ((String) res.get(0)).split("-->");
+        String preword = null;
+        for (String node : nodes){
+            if (preword != null) path.add(new Edge(preword, node, graph.getEdge(preword, node)));
+            preword = node;
+        }
+        showDirectedGraph(graph, path, "graph_path.png");
         return ("(" + res.get(1) + "): " + res.get(0));
     }
 
     private static String calcShortestPath(String word1) {
         List<List<Object>> paths = graph.Dijkstra(word1);
+        if (paths == null) return "\"" + word1 + "\" is not exist";
         StringBuilder res = new StringBuilder();
         for (List<Object> path : paths){
             res.append("(").append(path.get(1)).append("): ").append(path.get(0)).append("\n");
@@ -222,7 +251,6 @@ public class App
      * 为止，或者进入的某个节点不存在出边为止。
      * 在遍历过程中，用户也可随时停止遍历。
      * *********************
-     * TODO: 将遍历的节点输出为文本，并以文件形式写入磁盘
      * @return 随机路径的字符串
      */
     private static String randomWalk() {
@@ -247,5 +275,15 @@ public class App
             v = graph.getVertex(randomIndex);
         }
         return path.toString();
+    }
+
+    private static void stringToFile(String filepath, String content) {
+        try {
+            PrintWriter out = new PrintWriter(filepath);
+            out.print(content);
+            out.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }

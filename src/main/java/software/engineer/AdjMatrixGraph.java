@@ -3,7 +3,7 @@ package software.engineer;
 import java.util.*;
 
 public class AdjMatrixGraph implements Graph{
-    private List<String> vertexes;
+    private final List<String> vertexes;
     private int[][] edges;
     private int size;
 
@@ -126,19 +126,21 @@ public class AdjMatrixGraph implements Graph{
         }
     }
 
-    private int distance(int i, int j){
-        if (edges[i][j] > 0) return edges[i][j];
+    private int distance(int[][] dis, int i, int j){
+        if (dis[i][j] > 0) return dis[i][j];
         else return 10000000;
     }
 
     @Override
     public List<List<Object>> Dijkstra(String v) {
+        if (!this.vertexes.contains(v)) return null;
         int start = vertexes.indexOf(v);
         int[] visit = new int[this.size];
         int[] bestmin = new int[this.size];
         String[] path = new String[this.size];
         int max = 10000000;
-        int[][] dis = edges;
+        int[][] dis = new int[this.size][this.size];
+        for(int i=0; i<this.size; i++) dis[i]=Arrays.copyOf(edges[i], this.size);
         visit[start] = 1;
         bestmin[start] = 0;
 
@@ -149,8 +151,8 @@ public class AdjMatrixGraph implements Graph{
 
             //步骤① 找出与源点距离最短的那个点，即遍历distance[1][1]，distance[1][2],.....distance[1][N]中的最小值
             for(int i = 0; i < this.size; i++) {
-                if(visit[i] == 0 && distance(start, i) < Dtemp) {
-                    Dtemp = distance(start, i);
+                if(visit[i] == 0 && distance(dis, start, i) < Dtemp) {
+                    Dtemp = distance(dis, start, i);
                     k = i;
                 }
             }
@@ -160,8 +162,8 @@ public class AdjMatrixGraph implements Graph{
 
             //步骤② 松弛操作
             for(int i = 0; i < this.size; i++) {
-                if(visit[i] == 0 && (distance(start, k) + distance(k, i)) < distance(start, i)) {
-                    dis[start][i] = distance(start, k) + distance(k, i);
+                if(visit[i] == 0 && (distance(dis, start, k) + distance(dis, k, i)) < distance(dis, start, i)) {
+                    dis[start][i] = distance(dis, start, k) + distance(dis, k, i);
                     path[i] = (path[k]==null?(v+"-->"+ vertexes.get(k)):path[k]) + "-->" + vertexes.get(i);
                 }
                 if (path[i] == null && (bestmin[i] > 0 || i==start)) path[i] = v+"-->"+ vertexes.get(i);

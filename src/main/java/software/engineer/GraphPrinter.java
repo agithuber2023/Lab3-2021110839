@@ -32,15 +32,16 @@ public class GraphPrinter extends JFrame {
         return graph;
     }
 
-    public GraphPrinter(SparseGraph graph) {
-        this.g = graph;
+    public GraphPrinter() {
+        this.g = new SparseGraph();
     }
 
     /**
      * 可视化显示图
      * https://blog.csdn.net/sunquan291/article/details/81487141
      */
-    public void draw() {
+    public void draw(SparseGraph g) {
+        this.g = g;
         this.setTitle("Graph");
         this.setFont(new Font("Times New Roman", Font.PLAIN, 12));
         this.setBackground(Color.white);// 设置窗口背景颜色
@@ -57,7 +58,11 @@ public class GraphPrinter extends JFrame {
         // 设置边的文本标签
         vv.getRenderContext().setEdgeLabelTransformer(s -> s.split("=")[1]);
         // 设置边的线型
-        vv.getRenderContext().setEdgeStrokeTransformer(p -> new BasicStroke(1f));
+        vv.getRenderContext().setEdgeStrokeTransformer(p -> {
+//            System.out.println(p);
+            if (p.startsWith("[b]")) return new BasicStroke(3f);
+            else return new BasicStroke(1f);
+        });
 
         DefaultModalGraphMouse<Integer, String> gm = new DefaultModalGraphMouse<Integer, String>();
         gm.setMode(Mode.PICKING);
@@ -94,7 +99,11 @@ public class GraphPrinter extends JFrame {
         // 设置边的文本标签
         vis.getRenderContext().setEdgeLabelTransformer(s -> s.split("=")[1]);
         // 设置边的线型
-        vis.getRenderContext().setEdgeStrokeTransformer(p -> new BasicStroke(1f));
+        vis.getRenderContext().setEdgeStrokeTransformer(p -> {
+//            System.out.println(p);
+            if (p.startsWith("[b]")) return new BasicStroke(3f);
+            else return new BasicStroke(1f);
+        });
 
         // Create the buffered image
         BufferedImage image = (BufferedImage) vis.getImage(
@@ -118,7 +127,7 @@ public class GraphPrinter extends JFrame {
 
     public static void main(String[] args) {
         SparseGraph g = initGraph();
-        GraphPrinter frame = new GraphPrinter(g);
-        frame.draw();
+        GraphPrinter frame = new GraphPrinter();
+        frame.draw(g);
     }
 }
