@@ -8,6 +8,7 @@ import guru.nidi.graphviz.model.Factory;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.LinkSource;
 import guru.nidi.graphviz.model.Node;
+import org.apache.batik.swing.JSVGCanvas;
 
 import javax.swing.*;
 import java.awt.*;
@@ -118,7 +119,7 @@ public class App
     }
 
     private static void showDirectedGraph(Graph g) throws IOException {
-        showDirectedGraph(g, new ArrayList<>(), "graph.png");
+        showDirectedGraph(g, new ArrayList<>(), "graph.svg");
     }
 
     /**
@@ -225,7 +226,7 @@ public class App
             if (preword != null) path.add(new Edge(preword, node, graph.getEdge(preword, node)));
             preword = node;
         }
-        showDirectedGraph(graph, path, "graph_path.png");
+        showDirectedGraph(graph, path, "graph_path.svg");
         return ("(" + res.get(1) + "): " + res.get(0));
     }
 
@@ -275,7 +276,7 @@ public class App
         PrintWriter out = new PrintWriter("random_walk.txt");
         out.print(path);
         out.close();
-        imageFrame.draw(graph, paths, "random_walk.png");
+        imageFrame.draw(graph, paths, "random_walk.svg");
         return path.toString();
     }
 }
@@ -528,21 +529,20 @@ class ImageFrame extends JFrame {
         contentPane.repaint();
         contentPane.revalidate();
 
-        // 读取图片
         generateImage(graph, path, filename);
-        ImageIcon imageIcon = new ImageIcon(filename);
 
-        // 创建一个标签并设置图像
-        JLabel label = new JLabel(imageIcon);
-        JScrollPane scrollPane = new JScrollPane(label);
+        // 使用Batik创建SVG画布
+        JSVGCanvas canvas = new JSVGCanvas();
+        canvas.setURI(filename);
+
+        // 创建一个标签并设置画布
+        JScrollPane scrollPane = new JScrollPane(canvas);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         add(scrollPane);
 
-        // 设置窗口大小，考虑最大高度1000
-        int width = imageIcon.getIconWidth();
-        int height = Math.min(imageIcon.getIconHeight(), 1000);
-        setSize(new Dimension(width+50, height));
+        // 设置窗口大小
+        setSize(new Dimension(500, 500));
 
 //        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
@@ -564,7 +564,7 @@ class ImageFrame extends JFrame {
         guru.nidi.graphviz.model.Graph g = graph("text").directed()
                 .linkAttr().with("class", "link-class")
                 .with(linkSources);
-        Graphviz.fromGraph(g).render(Format.PNG).toFile(new File(filename));
+        Graphviz.fromGraph(g).render(Format.SVG).toFile(new File(filename));
     }
 }
 

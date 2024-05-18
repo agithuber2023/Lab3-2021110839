@@ -39,4 +39,4 @@
 > 
 > 将遍历的节点输出为文本，并以文件形式写入磁盘
 
-![img.png](img.png)
+![img.png](readme_img/img.png)
