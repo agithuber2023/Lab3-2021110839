@@ -1,34 +1,36 @@
 package software.engineer;
 
-import guru.nidi.graphviz.attribute.Color;
-import guru.nidi.graphviz.attribute.Label;
-import guru.nidi.graphviz.engine.Format;
-import guru.nidi.graphviz.engine.Graphviz;
-import guru.nidi.graphviz.model.Factory;
-import guru.nidi.graphviz.model.Link;
-import guru.nidi.graphviz.model.LinkSource;
-import guru.nidi.graphviz.model.Node;
-import org.apache.batik.swing.JSVGCanvas;
-
-import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
-import static guru.nidi.graphviz.model.Factory.graph;
+import org.jnativehook.GlobalScreen;
+import org.jnativehook.NativeHookException;
+import org.jnativehook.keyboard.NativeKeyEvent;
+import org.jnativehook.keyboard.NativeKeyListener;
 
 public class App
 {
     private static Graph graph;
     private static final ImageFrame imageFrame = new ImageFrame();
 
+    static volatile boolean isRunning=true;
+
     /**
      * 主程序入口，接收用户输入文件，生成图，并允许用户选择后续各项功能
      * @param args -f 或者 --file 指定输入文件路径
      */
     public static void main(String[] args) throws Exception {
+
+        // 关闭日志显示
+        LogManager.getLogManager().reset();
+        Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+        logger.setLevel(Level.OFF);
+
         InputFile inputFile = new InputFile(args);
         String[] words = inputFile.getWords();
         graph = buildGraph(words);
@@ -84,12 +86,15 @@ public class App
                 }
                 case 5 -> {
                     String randomwalk = randomWalk();
-                    System.out.println(randomwalk);
+                    PrintWriter out = new PrintWriter("random_walk.txt");
+                    out.print(randomwalk);
+                    out.close();
                 }
                 case 0 -> flag = false;
                 default -> System.out.println("无效选择，请重新输入");
             }
         }
+        //这行不能删，因为画图程序会开后台线程（或者进程，不清楚），删去这行后画图线程（进程）不结束，程序无法退出。
         System.exit(0);
     }
 
@@ -245,11 +250,12 @@ public class App
      * 点，以此为起点沿出边进行随机遍历，记录经
      * 过的所有节点和边，直到出现第一条重复的边
      * 为止，或者进入的某个节点不存在出边为止。
-     * 在遍历过程中，用户也可随时停止遍历。
+     * 在遍历过程中，用户也可通过键入'i'键随时
+     * 停止遍历。
      * *********************
      * @return 随机路径的字符串
      */
-    private static String randomWalk() throws IOException {
+    private static String randomWalk() throws IOException, AWTException, InterruptedException, NativeHookException {
         boolean[] visited = new boolean[graph.size()];
         // 随机起点
         Random random = new Random();
@@ -261,358 +267,50 @@ public class App
         visited[randomIndex] = true;
         List<String> neighbors;
 
+        try {
+            GlobalScreen.registerNativeHook();
+        } catch (NativeHookException ex) {
+            System.err.println("注册全局键盘监听器失败");
+            System.exit(1);
+        }
+
+        isRunning=true;
+        GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
+            public void nativeKeyPressed(NativeKeyEvent e) {
+                if (NativeKeyEvent.getKeyText(e.getKeyCode()).equalsIgnoreCase("i")) {
+                    isRunning = false;
+                }
+            }
+
+            public void nativeKeyReleased(NativeKeyEvent e) { }
+
+            public void nativeKeyTyped(NativeKeyEvent e) { }
+        });
+
         while ((neighbors = graph.getNeighbors(v)) != null) {
-            // 随机选择邻居
-            randomIndex = random.nextInt(graph.size());
-            while (!neighbors.contains(graph.getVertex(randomIndex))) randomIndex = random.nextInt(graph.size());
+            Thread.sleep(2000);
+            if (isRunning) {
+                // 随机选择邻居
+                randomIndex = random.nextInt(graph.size());
+                while (!neighbors.contains(graph.getVertex(randomIndex))) randomIndex = random.nextInt(graph.size());
 
-            path.append("-->").append(graph.getVertex(randomIndex));
-            paths.add(new Edge(v, graph.getVertex(randomIndex), graph.getEdge(v, graph.getVertex(randomIndex))));
-            if (visited[randomIndex]) break;
-            else visited[randomIndex] = true;
-            v = graph.getVertex(randomIndex);
-        }
+                path.append("-->").append(graph.getVertex(randomIndex));
+                paths.add(new Edge(v, graph.getVertex(randomIndex), graph.getEdge(v, graph.getVertex(randomIndex))));
 
-        PrintWriter out = new PrintWriter("random_walk.txt");
-        out.print(path);
-        out.close();
-        imageFrame.draw(graph, paths, "random_walk.svg");
-        return path.toString();
-    }
-}
+                imageFrame.draw(graph, paths, "random_walk.svg");
+                System.out.println(path);
 
-
-/**
- * 图结构的接口
- * 后期可能需要用不同的数据结构实现程序：
- * -[x] 邻接矩阵的图结构（稠密图）
- * -[ ] 邻接表的图结构（稀疏图）
- */
-interface Graph {
-    int size(); // 顶点数
-
-    /* 顶点 */
-    void addVertex(String vertex);
-    List<String> getVertexes(); // 顶点列表V
-    int getVertex(String vertex); // vertex -> index
-    String getVertex(int index); // index -> vertex
-    List<String> getNeighbors(String v); // 邻居节点
-
-    /* 边 */
-    void addEdge(String a, String b) throws Exception; // 添加边（边权重+1）
-    void addEdge(String a, String b, int value) throws Exception; // 设置边权重为 value
-    int getEdge(String a, String b);
-    List<Edge> getEdges(); // 边列表E
-
-
-    /* 显示 */
-    void print();
-
-    /* 图算法 */
-    List<List<Object>> Dijkstra(String v); // [路径, 路径长度]
-}
-
-record Edge(String from, String to, int value) {
-
-    @Override
-    public String toString() {
-        return "(" + from + ", " + to + ") = " + value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Edge edge = (Edge) o;
-        return value == edge.value && Objects.equals(from, edge.from) && Objects.equals(to, edge.to);
-    }
-
-}
-
-
-/**
- * 邻接矩阵数据结构的图实现
- */
-class AdjMatrixGraph implements Graph{
-    private final List<String> vertexes;
-    private int[][] edges;
-    private int size;
-
-    public AdjMatrixGraph(String[] vertexes, int[][] edges) {
-        this.vertexes = new ArrayList<>(Arrays.asList(vertexes));
-        this.edges = edges;
-    }
-    public AdjMatrixGraph(String[] vertexes) {
-        this.vertexes = new ArrayList<>(Arrays.asList(vertexes));
-        this.size = this.vertexes.size();
-        this.edges = new int[this.size][this.size];
-    }
-    public AdjMatrixGraph(){
-        this.vertexes = new ArrayList<>();
-        this.size = 0;
-        this.edges = new int[0][];
-    }
-    @Override
-    public int size() {
-        return this.size;
-    }
-
-    @Override
-    public void addVertex(String vertex) {
-        this.vertexes.add(vertex);
-        int[][] newEdges = new int[this.size+1][this.size+1];
-        for (int i=0; i<this.size; i++){
-            System.arraycopy(this.edges[i], 0, newEdges[i], 0, this.size);
-        }
-        this.edges = newEdges;
-        this.size++;
-    }
-
-    @Override
-    public List<String> getVertexes() {
-        return vertexes;
-    }
-
-    @Override
-    public List<String> getNeighbors(String v) {
-        List<String> results = new ArrayList<>();
-        if (vertexes.contains(v)){
-            int index = vertexes.indexOf(v);
-            for (int i=0; i<this.size; i++){
-                if (this.edges[index][i] > 0) results.add(vertexes.get(i));
+                if (visited[randomIndex]) break;
+                else visited[randomIndex] = true;
+                v = graph.getVertex(randomIndex);
             }
-        }
-        return results;
-    }
-
-    @Override
-    public int getVertex(String vertex) {
-        return vertexes.indexOf(vertex);
-    }
-
-    @Override
-    public String getVertex(int index) {
-        if (index < this.size && index >=0)
-            return vertexes.get(index);
-        else {
-            throw new IndexOutOfBoundsException(index);
-        }
-    }
-
-
-    @Override
-    public void addEdge(String a, String b, int value) throws Exception {
-        if (vertexes.contains(a) && vertexes.contains(b)){
-            int index_a = vertexes.indexOf(a);
-            int index_b = vertexes.indexOf(b);
-            this.edges[index_a][index_b] = value;
-        }
-        else {
-            throw new Exception("Vertex is not exist");
-        }
-    }
-
-    @Override
-    public void addEdge(String a, String b) throws Exception {
-        if (vertexes.contains(a) && vertexes.contains(b)){
-            int index_a = vertexes.indexOf(a);
-            int index_b = vertexes.indexOf(b);
-            this.edges[index_a][index_b]++;
-        }
-        else {
-            throw new Exception("Vertex is not exist");
-        }
-    }
-
-    @Override
-    public List<Edge> getEdges() {
-        List<Edge> results = new ArrayList<>();
-        for (int i=0; i<this.size; i++){
-            for (int j=0; j<this.size; j++){
-                if (edges[i][j] > 0)
-                    results.add(new Edge(vertexes.get(i), vertexes.get(j), edges[i][j]));
-            }
-        }
-        return results;
-    }
-
-    @Override
-    public int getEdge(String a, String b) {
-        if (vertexes.contains(a) && vertexes.contains(b)) {
-            int index_a = vertexes.indexOf(a);
-            int index_b = vertexes.indexOf(b);
-            return edges[index_a][index_b];
-        }
-        else {
-            return -1;
-        }
-    }
-
-    @Override
-    public void print() {
-        System.out.println("Adjacency Matrix:");
-        System.out.println(this.vertexes.toString());
-        for (int[] row : this.edges) {
-            System.out.println(Arrays.toString(row));
-        }
-    }
-
-    private int distance(int[][] dis, int i, int j){
-        if (dis[i][j] > 0) return dis[i][j];
-        else return 10000000;
-    }
-
-    @Override
-    public List<List<Object>> Dijkstra(String v) {
-        if (!this.vertexes.contains(v)) return null;
-        int start = vertexes.indexOf(v);
-        int[] visit = new int[this.size];
-        int[] bestmin = new int[this.size];
-        String[] path = new String[this.size];
-        int max = 10000000;
-        int[][] dis = new int[this.size][this.size];
-        for(int i=0; i<this.size; i++) dis[i]=Arrays.copyOf(edges[i], this.size);
-        visit[start] = 1;
-        bestmin[start] = 0;
-
-        //大循环（搞定这里就算搞定该算法了，后面的输出什么的可以不看）
-        for(int l = 0; l < this.size; l++) {
-            int Dtemp = max;
-            int k = -1;
-
-            //步骤① 找出与源点距离最短的那个点，即遍历distance[1][1]，distance[1][2],.....distance[1][N]中的最小值
-            for(int i = 0; i < this.size; i++) {
-                if(visit[i] == 0 && distance(dis, start, i) < Dtemp) {
-                    Dtemp = distance(dis, start, i);
-                    k = i;
-                }
-            }
-            if (k == -1) continue;
-            visit[k] = 1;
-            bestmin[k] = Dtemp;
-
-            //步骤② 松弛操作
-            for(int i = 0; i < this.size; i++) {
-                if(visit[i] == 0 && (distance(dis, start, k) + distance(dis, k, i)) < distance(dis, start, i)) {
-                    dis[start][i] = distance(dis, start, k) + distance(dis, k, i);
-                    path[i] = (path[k]==null?(v+"-->"+ vertexes.get(k)):path[k]) + "-->" + vertexes.get(i);
-                }
-                if (path[i] == null && (bestmin[i] > 0 || i==start)) path[i] = v+"-->"+ vertexes.get(i);
-            }
-        }
-
-        //输出路径
-        List<List<Object>> results = new ArrayList<>();
-        for(int i=0; i<this.size; i++) {
-            List<Object> t = new ArrayList<>();
-            t.add(path[i]!=null?path[i]:v+" -x "+ vertexes.get(i)+" 不可达");
-            t.add(path[i]!=null?bestmin[i]:-1);
-            results.add(t);
-        }
-        return results;
-    }
-}
-
-
-/**
- * GUI窗口，用于展示有向图
- * 利用 Graphviz 生成图片并保存，读取图片展示在界面上
- */
-class ImageFrame extends JFrame {
-
-    public void draw(Graph graph, List<Edge> path, String filename) throws IOException {
-        setTitle("Graph Display");
-
-        // 移除所有组件
-        Container contentPane = getContentPane();
-        contentPane.removeAll();
-        contentPane.repaint();
-        contentPane.revalidate();
-
-        generateImage(graph, path, filename);
-
-        // 使用Batik创建SVG画布
-        JSVGCanvas canvas = new JSVGCanvas();
-        canvas.setURI(filename);
-
-        // 创建一个标签并设置画布
-        JScrollPane scrollPane = new JScrollPane(canvas);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        add(scrollPane);
-
-        // 设置窗口大小
-        setSize(new Dimension(500, 500));
-
-//        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setVisible(true);
-    }
-
-    public void generateImage(Graph graph, List<Edge> path, String filename) throws IOException {
-        List<String> vertexes = graph.getVertexes();
-        List<Edge> edges = graph.getEdges();
-        Map<String, Node> nodes = vertexes.stream().collect(Collectors.toMap(vertex -> vertex, Factory::node, (a, b) -> b));
-        LinkSource[] linkSources = new LinkSource[edges.size()];
-        int index = 0;
-        for (Edge edge:edges){
-            linkSources[index++] = nodes.get(edge.from())
-                    .link(
-                            Link.to(nodes.get(edge.to()))
-                                    .with(Label.of(Integer.toString(edge.value())), path.contains(edge)? Color.RED: Color.BLACK)
-                    );
-        }
-        guru.nidi.graphviz.model.Graph g = graph("text").directed()
-                .linkAttr().with("class", "link-class")
-                .with(linkSources);
-        Graphviz.fromGraph(g).render(Format.SVG).toFile(new File(filename));
-    }
-}
-
-/**
- * 通过命令行参数读取文件内容，并实现预处理
- */
-class InputFile
-{
-    private static final String FILE_PATH = "article.txt";
-    private String file_path = null;
-    private final String[] words;
-
-    public InputFile(String[] args) throws IOException {
-        read_args(args);
-        this.words = read();
-    }
-
-    /**
-     * 读取命令行参数中的指定文件（-f, --file）
-     * @param args 参数列表
-     */
-    public void read_args(String[] args){
-        for (int i = 0; i < args.length; i++) {
-            if (("-f".equals(args[i]) || "--file".equals(args[i])) && i + 1 < args.length) {
-                this.file_path = args[i + 1];
+            else {
+                System.out.println("User interrupt.");
                 break;
             }
         }
-        if (this.file_path == null) this.file_path = FILE_PATH;
-    }
 
-    /**
-     * 输入文件，预处理文件内容，返回单词列表
-     * @return 单词列表
-     */
-    private String[] read() throws IOException {
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(this.file_path))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append(" ");
-            }
-        }
-        String filter_non_alphabet = content.toString().replaceAll("[^A-Za-z]", " "); // 将非字母字符替换为空格
-        return filter_non_alphabet.toLowerCase().split("\\s+");
-    }
-
-    public String[] getWords() {
-        return this.words;
+        GlobalScreen.unregisterNativeHook();
+        return path.toString();
     }
 }
