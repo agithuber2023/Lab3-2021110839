@@ -2,6 +2,7 @@ package software.engineer;
 
 import java.awt.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -34,7 +35,7 @@ public class App
         InputFile inputFile = new InputFile(args);
         String[] words = inputFile.getWords();
         graph = buildGraph(words);
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         String input;
         boolean flag = true;
         while (flag) {
@@ -86,7 +87,7 @@ public class App
                 }
                 case 5 -> {
                     String randomwalk = randomWalk();
-                    PrintWriter out = new PrintWriter("random_walk.txt");
+                    PrintWriter out = new PrintWriter("random_walk.txt", StandardCharsets.UTF_8);
                     out.print(randomwalk);
                     out.close();
                 }
@@ -192,7 +193,7 @@ public class App
                 List<String> bridges = queryBridgeWords(preword, word.toLowerCase());
                 if (bridges.size() == 1) result.append(bridges.get(0)).append(" ");
                 else if (bridges.size() > 1) {
-                    Random random = new Random();
+//                    Random random = new Random();
                     int randomIndex = random.nextInt(bridges.size());
                     result.append(bridges.get(randomIndex)).append(" ");
                 }
@@ -258,7 +259,7 @@ public class App
     private static String randomWalk() throws IOException, AWTException, InterruptedException, NativeHookException {
         boolean[] visited = new boolean[graph.size()];
         // 随机起点
-        Random random = new Random();
+//        Random random = new Random();
         int randomIndex = random.nextInt(graph.size());
         String v = graph.getVertex(randomIndex);
 
