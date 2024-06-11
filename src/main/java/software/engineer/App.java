@@ -1,8 +1,8 @@
 package software.engineer;
 
 import java.awt.*;
-import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.io.*;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.List;
@@ -38,6 +38,7 @@ public class App
         InputFile inputFile = new InputFile(args);
         String[] words = inputFile.getWords();
         graph = buildGraph(words);
+//        Scanner scanner = new Scanner(System.in);
         Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         String input;
         boolean flag = true;
@@ -197,6 +198,8 @@ public class App
                 if (bridges.size() == 1) result.append(bridges.get(0)).append(" ");
                 else if (bridges.size() > 1) {
 //                    Random random = new Random();
+//                    int randomIndex = random.nextInt(bridges.size());
+//                    SecureRandom random = new SecureRandom();
                     int randomIndex = random.nextInt(bridges.size());
                     result.append(bridges.get(randomIndex)).append(" ");
                 }
@@ -223,7 +226,15 @@ public class App
      */
     private static String calcShortestPath(String word1, String word2) throws IOException {
         List<List<Object>> paths = graph.Dijkstra(word1);
-        if (paths == null) return "\"" + word1 + "\" is not exist";
+//        if (paths == null) return "\"" + word1 + "\" is not exist";
+        if (paths == null) {
+            if (graph.getVertexes().contains(word2)) {
+                return "\"" + word1 + "\" is not exist";
+            }
+            else {
+                return "\"" + word1 + "\" and \"" + word2 + "\" don't exist";
+            }
+        }
         if (!graph.getVertexes().contains(word2)) return "\"" + word2 + "\" is not exist";
         List<Object> res = paths.get(graph.getVertex(word2));
 
@@ -263,6 +274,7 @@ public class App
         boolean[] visited = new boolean[graph.size()];
         // 随机起点
 //        Random random = new Random();
+//        SecureRandom random = new SecureRandom();
         int randomIndex = random.nextInt(graph.size());
         String v = graph.getVertex(randomIndex);
 
