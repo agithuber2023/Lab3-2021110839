@@ -64,7 +64,8 @@ class ImageFrame extends JFrame {
             linkSources[index++] = nodes.get(edge.from())
                     .link(
                             Link.to(nodes.get(edge.to()))
-                                    .with(guru.nidi.graphviz.attribute.Label.of(Integer.toString(edge.value())), path.contains(edge)? guru.nidi.graphviz.attribute.Color.RED: Color.BLACK)
+                                    .with(guru.nidi.graphviz.attribute.Label.of(Integer
+                                            .toString(edge.value())), path.contains(edge)? guru.nidi.graphviz.attribute.Color.RED: Color.BLACK)
                     );
         }
         guru.nidi.graphviz.model.Graph g = graph("text").directed()

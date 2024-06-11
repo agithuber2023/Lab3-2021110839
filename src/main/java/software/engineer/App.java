@@ -1,7 +1,9 @@
 package software.engineer;
 
 import java.awt.*;
+import java.nio.charset.StandardCharsets;
 import java.io.*;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -20,6 +22,8 @@ public class App
 
     static volatile boolean isRunning=true;
 
+    private  static SecureRandom random = new SecureRandom();
+
     /**
      * 主程序入口，接收用户输入文件，生成图，并允许用户选择后续各项功能
      * @param args -f 或者 --file 指定输入文件路径
@@ -34,7 +38,8 @@ public class App
         InputFile inputFile = new InputFile(args);
         String[] words = inputFile.getWords();
         graph = buildGraph(words);
-        Scanner scanner = new Scanner(System.in);
+//        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         String input;
         boolean flag = true;
         while (flag) {
@@ -86,7 +91,7 @@ public class App
                 }
                 case 5 -> {
                     String randomwalk = randomWalk();
-                    PrintWriter out = new PrintWriter("random_walk.txt");
+                    PrintWriter out = new PrintWriter("random_walk.txt", StandardCharsets.UTF_8);
                     out.print(randomwalk);
                     out.close();
                 }
@@ -192,7 +197,9 @@ public class App
                 List<String> bridges = queryBridgeWords(preword, word.toLowerCase());
                 if (bridges.size() == 1) result.append(bridges.get(0)).append(" ");
                 else if (bridges.size() > 1) {
-                    Random random = new Random();
+//                    Random random = new Random();
+//                    int randomIndex = random.nextInt(bridges.size());
+//                    SecureRandom random = new SecureRandom();
                     int randomIndex = random.nextInt(bridges.size());
                     result.append(bridges.get(randomIndex)).append(" ");
                 }
@@ -219,7 +226,15 @@ public class App
      */
     private static String calcShortestPath(String word1, String word2) throws IOException {
         List<List<Object>> paths = graph.Dijkstra(word1);
-        if (paths == null) return "\"" + word1 + "\" is not exist";
+//        if (paths == null) return "\"" + word1 + "\" is not exist";
+        if (paths == null) {
+            if (graph.getVertexes().contains(word2)) {
+                return "\"" + word1 + "\" is not exist";
+            }
+            else {
+                return "\"" + word1 + "\" and \"" + word2 + "\" don't exist";
+            }
+        }
         if (!graph.getVertexes().contains(word2)) return "\"" + word2 + "\" is not exist";
         List<Object> res = paths.get(graph.getVertex(word2));
 
@@ -258,7 +273,8 @@ public class App
     private static String randomWalk() throws IOException, AWTException, InterruptedException, NativeHookException {
         boolean[] visited = new boolean[graph.size()];
         // 随机起点
-        Random random = new Random();
+//        Random random = new Random();
+//        SecureRandom random = new SecureRandom();
         int randomIndex = random.nextInt(graph.size());
         String v = graph.getVertex(randomIndex);
 

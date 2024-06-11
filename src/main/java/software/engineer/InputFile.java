@@ -1,9 +1,9 @@
 package software.engineer;
 
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.io.FilenameUtils;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * 通过命令行参数读取文件内容，并实现预处理
@@ -39,7 +39,8 @@ class InputFile
      */
     private String[] read() throws IOException {
         StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(this.file_path))) {
+//        try (BufferedReader reader = new BufferedReader(new FileReader(this.file_path))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FilenameUtils.getName(this.file_path), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 content.append(line).append(" ");
