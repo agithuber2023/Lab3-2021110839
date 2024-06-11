@@ -3,6 +3,7 @@ package software.engineer;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -20,6 +21,8 @@ public class App
     private static final ImageFrame imageFrame = new ImageFrame();
 
     static volatile boolean isRunning=true;
+
+    private  static SecureRandom random = new SecureRandom();
 
     /**
      * 主程序入口，接收用户输入文件，生成图，并允许用户选择后续各项功能
