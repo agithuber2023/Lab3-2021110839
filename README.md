@@ -1,5 +1,7 @@
 # Lab1-Graph
 
+这是Lab3中的版本。
+
 运行依赖绘图工具 graphviz，需要安装 [下载地址](https://graphviz.org/download/)
 
 ## Feature
