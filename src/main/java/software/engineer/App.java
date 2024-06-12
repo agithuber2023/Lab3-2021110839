@@ -151,6 +151,7 @@ public class App
         }
         else if(message){
             System.out.println("No \"" + word1 + "\" or \"" + word2 + "\" in the graph!");
+            return results;
         }
 
         // 输出提示词
